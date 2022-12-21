@@ -7,7 +7,8 @@ def parse_moves(input)
     .map {[_1[0], _1[1].to_i]}
 end
 
-def move(visited, head, tail, direction, distance)
+def move(visited, rope, direction, distance)
+  head, *tail = rope
   distance.times do
     case direction
     when 'U' then head[1] += 1
@@ -16,10 +17,12 @@ def move(visited, head, tail, direction, distance)
     when 'R' then head[0] += 1
     end
 
-    follow(head, tail)
-    visited << tail.dup
+    rope.each_cons(2) do |h, t|
+      follow(h, t)
+    end
+    visited << rope.last.dup
   end
-  [head, tail]
+  rope
 end
 
 def follow(head, tail)
@@ -60,21 +63,20 @@ if ARGV.empty?
 
     it 'moves the head and tail in one direction' do
       visited = Set.new
-      expect(visited).to be_empty
-      expect(move(visited, [0, 0], [0, 0], 'U', 5)).to eql([[0, 5], [0, 4]])
-      expect(visited.to_a).to eq([[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]])
-      expect(move(visited, [0, 0], [0, 0], 'D', 5)).to eql([[0, -5], [0, -4]])
-      expect(move(visited, [0, 0], [0, 0], 'L', 5)).to eql([[-5, 0], [-4, 0]])
-      expect(move(visited, [0, 0], [0, 0], 'R', 5)).to eql([[5, 0], [4, 0]])
+
+      expect(move(visited, [[0, 0], [0, 0]], 'U', 5)).to eql([[0, 5], [0, 4]])
+      expect(move(visited, [[0, 0], [0, 0]], 'D', 5)).to eql([[0, -5], [0, -4]])
+      expect(move(visited, [[0, 0], [0, 0]], 'L', 5)).to eql([[-5, 0], [-4, 0]])
+      expect(move(visited, [[0, 0], [0, 0]], 'R', 5)).to eql([[5, 0], [4, 0]])
     end
 
 
     it 'moves the head and tail diagonally' do
       visited = Set.new
-      expect(move(visited, [1, 1], [0, 0], 'U', 1)).to eql([[1, 2], [1, 1]])
-      expect(move(visited, [-1, -1], [0, 0], 'D', 1)).to eql([[-1, -2], [-1, -1]])
-      expect(move(visited, [-1, 1], [0, 0], 'L', 1)).to eql([[-2, 1], [-1, 1]])
-      expect(move(visited, [1, 1], [0, 0], 'R', 1)).to eql([[2, 1], [1, 1]])
+      expect(move(visited, [[1, 1], [0, 0]], 'U', 1)).to eql([[1, 2], [1, 1]])
+      expect(move(visited, [[-1, -1], [0, 0]], 'D', 1)).to eql([[-1, -2], [-1, -1]])
+      expect(move(visited, [[-1, 1], [0, 0]], 'L', 1)).to eql([[-2, 1], [-1, 1]])
+      expect(move(visited, [[1, 1], [0, 0]], 'R', 1)).to eql([[2, 1], [1, 1]])
     end
 
     it 'works with the example' do
@@ -82,18 +84,17 @@ if ARGV.empty?
       tail = [0, 0]
       visited = Set.new
       parse_moves(@moves).each do |(dir, distance)|
-        head, tail = move(visited, head, tail, dir, distance)
+        head, tail = move(visited, [head, tail], dir, distance)
       end
       expect(visited.length).to eq(13)
     end
   end
 else
   visited = Set.new
-  head = [0, 0]
-  tail = [0, 0]
+  rope = Array.new(10) { Array.new(2) { 0 } }
   moves = parse_moves(File.readlines(ARGV.first))
   moves.each do |(dir, distance)|
-    head, tail = move(visited, head, tail, dir, distance)
+    rope = move(visited, rope, dir, distance)
   end
   p visited.length
 end
